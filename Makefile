@@ -1,58 +1,32 @@
-HAS_DEP := $(shell command -v dep;)
-DEP_VERSION := v0.5.0
-GIT_TAG := $(shell git describe --tags --always)
-GIT_COMMIT := $(shell git rev-parse --short HEAD)
-LDFLAGS := "-X main.GitTag=${GIT_TAG} -X main.GitCommit=${GIT_COMMIT}"
-DIST := $(CURDIR)/dist
-DOCKER_USER := $(shell printenv DOCKER_USER)
-DOCKER_PASSWORD := $(shell printenv DOCKER_PASSWORD)
-TRAVIS := $(shell printenv TRAVIS)
+GIT_VERSION := $(shell git describe --match "v[0-9]*")
+GIT_BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
+GIT_HASH := $(GIT_BRANCH)/$(shell git log -1 --pretty=format:"%H")
+TIMESTAMP := $(shell date '+%Y-%m-%d_%I:%M:%S%p')
+REGISTRY := ghcr.io
+REPO ?= $(REGISTRY)/skbn
+IMAGE_TAG := $(GIT_VERSION)
+GOOS := $(shell go env GOOS)
+PACKAGE := github.com/gruberdev/skbn
+SKBN_PATH := cmd/skbn.go
+SKBN_IMAGE := skbn
+LD_FLAGS="-s -w -X $(PACKAGE)/pkg/version.BuildVersion=$(GIT_VERSION) -X $(PACKAGE)/pkg/version.BuildHash=$(GIT_HASH) -X $(PACKAGE)/pkg/version.BuildTime=$(TIMESTAMP)"
 
-all: bootstrap build docker push
+all: skbn
 
-fmt:
-	go fmt ./pkg/... ./cmd/...
+.PHONY: local
+local:
+	go build -ldflags=$(LD_FLAGS) $(SKBN_PATH)
 
-vet:
-	go vet ./pkg/... ./cmd/...
+.PHONY: skbn
+skbn:
+	GOOS=$(GOOS) go build -o skbn -ldflags=$(LD_FLAGS) $(SKBN_PATH)
 
-# Build skbn binary
-build: fmt vet
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags $(LDFLAGS) -o bin/skbn cmd/skbn.go
+.PHONY: docker-publish-skbn docker-build-skbn docker-push-skbn
+docker-publish-skbn: docker-build-skbn docker-push-skbn
 
-# Build skbn docker image
-docker: fmt vet
-	cp bin/skbn skbn
-	docker build -t maorfr/skbn:latest .
-	rm skbn
+docker-build-skbn:
+	@docker buildx build . --progress plane --platform linux/arm64,linux/amd64 --tag $(REPO)/$(SKBN_IMAGE):$(IMAGE_TAG) --build-arg LD_FLAGS=$(LD_FLAGS)
 
-
-# Push will only happen in travis ci
-push:
-ifdef TRAVIS
-ifdef DOCKER_USER
-ifdef DOCKER_PASSWORD
-	docker login -u $(DOCKER_USER) -p $(DOCKER_PASSWORD)
-	docker push maorfr/skbn:latest
-endif
-endif
-endif
-
-bootstrap:
-ifndef HAS_DEP
-	wget -q -O $(GOPATH)/bin/dep https://github.com/golang/dep/releases/download/$(DEP_VERSION)/dep-linux-amd64
-	chmod +x $(GOPATH)/bin/dep
-endif
-	dep ensure
-
-dist:
-	mkdir -p $(DIST)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags $(LDFLAGS) -o skbn cmd/skbn.go
-	tar -zcvf $(DIST)/skbn-linux-$(GIT_TAG).tgz skbn
-	rm skbn
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags $(LDFLAGS) -o skbn cmd/skbn.go
-	tar -zcvf $(DIST)/skbn-macos-$(GIT_TAG).tgz skbn
-	rm skbn
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags $(LDFLAGS) -o skbn.exe cmd/skbn.go
-	tar -zcvf $(DIST)/skbn-windows-$(GIT_TAG).tgz skbn.exe
-	rm skbn.exe
+docker-push-skbn:
+	@docker buildx build . --progress plane --push --platform linux/arm64,linux/amd64 --tag $(REPO)/$(SKBN_IMAGE):$(IMAGE_TAG) --build-arg LD_FLAGS=$(LD_FLAGS)
+	@docker buildx build . --progress plane --push --platform linux/arm64,linux/amd64 --tag $(REPO)/$(SKBN_IMAGE):latest --build-arg LD_FLAGS=$(LD_FLAGS)
