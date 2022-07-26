@@ -8,7 +8,6 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.0.0-20181022225951-5152f14ace1c
 	github.com/aws/aws-sdk-go v1.16.7
 	github.com/djherbis/buffer v0.0.0-20150721040419-4972e2bf4a27
-	github.com/maorfr/skbn v0.0.0-20220615055825-326c955b20dd
 	github.com/spf13/cobra v0.0.3
 	google.golang.org/api v0.1.0
 	k8s.io/api v0.0.0-20181204000039-89a74a8d264d
