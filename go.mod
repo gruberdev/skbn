@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-pipeline-go v0.1.8
 	github.com/Azure/azure-storage-blob-go v0.0.0-20181022225951-5152f14ace1c
 	github.com/aws/aws-sdk-go v1.16.7
-	github.com/djherbis/buffer v0.0.0-20150721040419-4972e2bf4a27
+	github.com/djherbis/buffer v1.1.0
 	github.com/spf13/cobra v0.0.3
 	google.golang.org/api v0.1.0
 	k8s.io/api v0.0.0-20181204000039-89a74a8d264d
@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/djherbis/nio/v3 v3.0.1 // indirect
 	github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96 // indirect
 	github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021 // indirect
 	github.com/gogo/protobuf v1.1.1 // indirect

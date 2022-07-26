@@ -11,6 +11,7 @@ import (
 	"github.com/gruberdev/skbn/pkg/utils"
 
 	"github.com/djherbis/buffer"
+	"github.com/djherbis/nio/v3"
 )
 
 // FromToPair is a pair of FromPath and ToPath
